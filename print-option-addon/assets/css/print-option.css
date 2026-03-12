@@ -32,3 +32,20 @@
 	height: 16px;
 }
 
+/* Price summary row shown below p.price when the print option is checked. */
+.poa-price-summary {
+	display: none;
+	margin: 6px 0 12px;
+	font-size: 1em;
+	color: #333;
+}
+
+.poa-price-summary .poa-summary-label {
+	font-weight: 600;
+	margin-right: 4px;
+}
+
+.poa-price-summary .poa-summary-value {
+	color: #333;
+}
+

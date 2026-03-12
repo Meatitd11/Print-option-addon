@@ -53,6 +53,10 @@ function poa_init() {
 	// Enqueue scripts / styles on product pages.
 	add_action( 'wp_enqueue_scripts', 'poa_enqueue_assets' );
 
+	// AJAX: server-side price calculation for the product page live preview.
+	add_action( 'wp_ajax_poa_calculate_price', 'poa_ajax_calculate_price' );
+	add_action( 'wp_ajax_nopriv_poa_calculate_price', 'poa_ajax_calculate_price' );
+
 	// Cart: capture the print option from POST data.
 	add_filter( 'woocommerce_add_cart_item_data', 'poa_add_cart_item_data', 10, 3 );
 
@@ -210,6 +214,49 @@ function poa_enqueue_assets() {
 			'decimals'     => wc_get_price_decimals(),
 			'decimalSep'   => wc_get_price_decimal_separator(),
 			'thousandSep'  => wc_get_price_thousand_separator(),
+			'ajaxUrl'      => admin_url( 'admin-ajax.php' ),
+			'nonce'        => wp_create_nonce( 'poa_price_nonce' ),
+			'productId'    => $product_id,
+			'i18n'         => array(
+				'subtotal' => __( 'Subtotal', 'print-option-addon' ),
+				'total'    => __( 'Total', 'print-option-addon' ),
+			),
+		)
+	);
+}
+
+/**
+ * AJAX handler: calculate the product price with or without the print option.
+ *
+ * Accepts POST fields: nonce, product_id, variation_id, qty, has_print (yes|no).
+ * Returns server-formatted wc_price() strings for the per-unit price and the
+ * line subtotal so the front-end can display WooCommerce-accurate values.
+ */
+function poa_ajax_calculate_price() {
+	check_ajax_referer( 'poa_price_nonce', 'nonce' );
+
+	$product_id   = isset( $_POST['product_id'] ) ? absint( $_POST['product_id'] ) : 0;
+	$variation_id = isset( $_POST['variation_id'] ) ? absint( $_POST['variation_id'] ) : 0;
+	$qty          = isset( $_POST['qty'] ) ? max( 1, absint( $_POST['qty'] ) ) : 1;
+	$has_print    = ( isset( $_POST['has_print'] ) && 'yes' === sanitize_text_field( wp_unslash( $_POST['has_print'] ) ) );
+
+	$lookup_id = $variation_id ? $variation_id : $product_id;
+	$product   = wc_get_product( $lookup_id );
+
+	if ( ! $product ) {
+		wp_send_json_error( array( 'message' => __( 'Invalid product.', 'print-option-addon' ) ) );
+		return;
+	}
+
+	$base_price  = (float) $product->get_price();
+	$print_price = $has_print ? poa_get_per_item_price() : 0.0;
+	$unit_total  = $base_price + $print_price;
+	$subtotal    = $unit_total * $qty;
+
+	wp_send_json_success(
+		array(
+			'unit_price_html' => wp_kses_post( wc_price( $unit_total ) ),
+			'subtotal_html'   => wp_kses_post( wc_price( $subtotal ) ),
 		)
 	);
 }
