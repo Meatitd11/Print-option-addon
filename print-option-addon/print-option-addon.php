@@ -45,6 +45,7 @@ function poa_init() {
 	// Admin settings.
 	add_filter( 'woocommerce_get_sections_products', 'poa_add_settings_section' );
 	add_filter( 'woocommerce_get_settings_products', 'poa_get_settings', 10, 2 );
+	add_filter( 'plugin_action_links_' . plugin_basename( POA_PLUGIN_FILE ), 'poa_plugin_action_links' );
 
 	// Front-end: single product page.
 	add_action( 'woocommerce_before_add_to_cart_button', 'poa_render_print_option' );
@@ -72,6 +73,19 @@ function poa_missing_wc_notice() {
 	echo '<div class="notice notice-error"><p>'
 		. esc_html__( 'Print Option Addon requires WooCommerce to be installed and active.', 'print-option-addon' )
 		. '</p></div>';
+}
+
+/**
+ * Add a "Settings" link on the Plugins list page.
+ *
+ * @param array $links Existing plugin action links.
+ * @return array
+ */
+function poa_plugin_action_links( $links ) {
+	$settings_url  = admin_url( 'admin.php?page=wc-settings&tab=products&section=print_option' );
+	$settings_link = '<a href="' . esc_url( $settings_url ) . '">' . esc_html__( 'Settings', 'print-option-addon' ) . '</a>';
+	array_unshift( $links, $settings_link );
+	return $links;
 }
 
 // ---------------------------------------------------------------------------
@@ -181,12 +195,21 @@ function poa_enqueue_assets() {
 		true
 	);
 
+	// Fetch the base product price for the product currently being viewed.
+	$product_id    = get_queried_object_id();
+	$product       = wc_get_product( $product_id );
+	$product_price = $product ? (float) $product->get_price() : 0.0;
+
 	wp_localize_script(
 		'poa-script',
 		'poaData',
 		array(
 			'perItemPrice' => poa_get_per_item_price(),
+			'productPrice' => $product_price,
 			'currency'     => get_woocommerce_currency_symbol(),
+			'decimals'     => wc_get_price_decimals(),
+			'decimalSep'   => wc_get_price_decimal_separator(),
+			'thousandSep'  => wc_get_price_thousand_separator(),
 		)
 	);
 }
@@ -221,6 +244,10 @@ function poa_render_print_option() {
 		<p class="poa-print-total" style="display:none;">
 			<?php esc_html_e( 'Print total:', 'print-option-addon' ); ?>
 			<strong class="poa-print-total-amount"></strong>
+		</p>
+		<p class="poa-order-total" style="display:none;">
+			<?php esc_html_e( 'Total (incl. print):', 'print-option-addon' ); ?>
+			<strong class="poa-order-total-amount"></strong>
 		</p>
 	</div>
 	<?php
