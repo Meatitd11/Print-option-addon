@@ -1,9 +1,9 @@
 /**
  * Print Option Addon – front-end script.
  *
- * Dynamically updates the per-item print total AND the combined order total
- * displayed on the single product page when the customer changes the quantity
- * or toggles the "Print Option" checkbox.
+ * Updates the WooCommerce product price element to show the combined total
+ * (product price + print surcharge) × qty when the "Print Option" checkbox
+ * is checked, and restores the original price when it is unchecked.
  *
  * Also handles variable-product price changes so the displayed grand total
  * always reflects the currently selected variation price.
@@ -56,29 +56,18 @@
 	}
 
 	/**
-	 * Recalculate and refresh the print-total and order-total lines.
+	 * Update the WooCommerce product price element to reflect the combined total
+	 * (product price × qty + print price × qty) when the checkbox is checked,
+	 * or restore the original price when it is unchecked.
 	 */
 	function updatePrintTotal() {
-		var $checkbox     = $( '#poa_print_option' );
-		var $printWrap    = $( '.poa-print-total' );
-		var $printAmount  = $( '.poa-print-total-amount' );
-		var $orderWrap    = $( '.poa-order-total' );
-		var $orderAmount  = $( '.poa-order-total-amount' );
-		var $wcPrice      = $( 'p.price' ).first();
-
-		var qty = getQuantity();
+		var $checkbox = $( '#poa_print_option' );
+		var $wcPrice  = $( 'p.price' ).first();
+		var qty       = getQuantity();
 
 		if ( $checkbox.is( ':checked' ) ) {
-			var printTotal = perItemPrice * qty;
-			var orderTotal = ( productPrice * qty ) + printTotal;
+			var orderTotal  = ( productPrice + perItemPrice ) * qty;
 
-			$printAmount.text( formatPrice( printTotal ) );
-			$printWrap.show();
-
-			$orderAmount.text( formatPrice( orderTotal ) );
-			$orderWrap.show();
-
-			// Sync the WooCommerce default price element to the combined total.
 			if ( $wcPrice.length ) {
 				var $amountSpan = $wcPrice.find( '.woocommerce-Price-amount' ).first();
 				if ( $amountSpan.length ) {
@@ -92,9 +81,6 @@
 				}
 			}
 		} else {
-			$printWrap.hide();
-			$orderWrap.hide();
-
 			// Restore the original WooCommerce price element.
 			if ( $wcPrice.length && originalWcPriceHTML ) {
 				$wcPrice.html( originalWcPriceHTML );

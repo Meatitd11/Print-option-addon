@@ -241,14 +241,6 @@ function poa_render_print_option() {
 			echo ' ' . esc_html__( 'per item', 'print-option-addon' ) . ')';
 			?>
 		</label>
-		<p class="poa-print-total" style="display:none;">
-			<?php esc_html_e( 'Print total:', 'print-option-addon' ); ?>
-			<strong class="poa-print-total-amount"></strong>
-		</p>
-		<p class="poa-order-total" style="display:none;">
-			<?php esc_html_e( 'Total (incl. print):', 'print-option-addon' ); ?>
-			<strong class="poa-order-total-amount"></strong>
-		</p>
 	</div>
 	<?php
 }
