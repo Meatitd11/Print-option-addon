@@ -3,7 +3,7 @@
  * Plugin Name: Print Option Addon for WooCommerce
  * Plugin URI:  https://github.com/Meatitd11/Print-option-addon
  * Description: Adds a "Print Option" checkbox to single product pages. Customers can opt-in for a second print design at a configurable per-item price.
- * Version:     1.0.1
+ * Version:     1.0.2
  * Author:      Print Option Addon
  * Text Domain: print-option-addon
  * Domain Path: /languages
@@ -17,7 +17,7 @@ if ( ! defined( 'ABSPATH' ) ) {
 	exit;
 }
 
-define( 'POA_VERSION', '1.0.1' );
+define( 'POA_VERSION', '1.0.2' );
 define( 'POA_PLUGIN_FILE', __FILE__ );
 define( 'POA_PLUGIN_DIR', plugin_dir_path( __FILE__ ) );
 define( 'POA_PLUGIN_URL', plugin_dir_url( __FILE__ ) );
@@ -222,6 +222,12 @@ function poa_render_print_option() {
 	$label          = poa_get_checkbox_label();
 
 	$price_formatted = wc_price( $per_item_price );
+
+	// Determine the initial "Total Price" to display (base product price × 1 qty, no print surcharge).
+	$product_id    = get_queried_object_id();
+	$product       = wc_get_product( $product_id );
+	$product_price = $product ? (float) $product->get_price() : 0.0;
+	$total_initial = wc_price( $product_price );
 	?>
 	<div class="poa-print-option">
 		<p class="poa-title"><strong><?php esc_html_e( 'Print Option', 'print-option-addon' ); ?></strong></p>
@@ -241,6 +247,12 @@ function poa_render_print_option() {
 			echo ' ' . esc_html__( 'per item', 'print-option-addon' ) . ')';
 			?>
 		</label>
+		<p class="poa-total-price">
+			<?php esc_html_e( 'Total Price:', 'print-option-addon' ); ?>
+			<span id="poa_total_price_display">
+				<?php echo wp_kses_post( $total_initial ); ?>
+			</span>
+		</p>
 	</div>
 	<?php
 }

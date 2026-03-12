@@ -1,9 +1,10 @@
 /**
  * Print Option Addon – front-end script.
  *
- * Updates the WooCommerce product price element to show the combined total
+ * Updates the "Total Price" display inside the Print Option box and the
+ * WooCommerce product price element to show the combined total
  * (product price + print surcharge) × qty when the "Print Option" checkbox
- * is checked, and restores the original price when it is unchecked.
+ * is checked, and restores/shows the base product price × qty when unchecked.
  *
  * Also handles variable-product price changes so the displayed grand total
  * always reflects the currently selected variation price.
@@ -56,26 +57,35 @@
 	}
 
 	/**
-	 * Update the WooCommerce product price element to reflect the combined total
+	 * Update the "Total Price" display inside the Print Option box and the
+	 * WooCommerce product price element to reflect the combined total
 	 * (product price × qty + print price × qty) when the checkbox is checked,
-	 * or restore the original price when it is unchecked.
+	 * or the base product price × qty when it is unchecked.
 	 */
 	function updatePrintTotal() {
-		var $checkbox = $( '#poa_print_option' );
-		var $wcPrice  = $( 'p.price' ).first();
-		var qty       = getQuantity();
+		var $checkbox        = $( '#poa_print_option' );
+		var $wcPrice         = $( 'p.price' ).first();
+		var $totalDisplay    = $( '#poa_total_price_display' );
+		var qty              = getQuantity();
+		var isChecked        = $checkbox.is( ':checked' );
+		var displayTotal     = isChecked
+			? ( productPrice + perItemPrice ) * qty
+			: productPrice * qty;
 
-		if ( $checkbox.is( ':checked' ) ) {
-			var orderTotal  = ( productPrice + perItemPrice ) * qty;
+		// Always update the dedicated "Total Price" display inside the Print Option box.
+		if ( $totalDisplay.length ) {
+			$totalDisplay.html( '<span class="woocommerce-Price-amount amount"><bdi>' + formatPrice( displayTotal ) + '</bdi></span>' );
+		}
 
+		if ( isChecked ) {
 			if ( $wcPrice.length ) {
 				var $amountSpan = $wcPrice.find( '.woocommerce-Price-amount' ).first();
 				if ( $amountSpan.length ) {
-					$amountSpan.html( '<bdi>' + formatPrice( orderTotal ) + '</bdi>' );
+					$amountSpan.html( '<bdi>' + formatPrice( displayTotal ) + '</bdi>' );
 				} else {
 					$wcPrice.html(
 						'<span class="woocommerce-Price-amount amount"><bdi>' +
-						formatPrice( orderTotal ) +
+						formatPrice( displayTotal ) +
 						'</bdi></span>'
 					);
 				}
